@@ -1,4 +1,4 @@
-user
-====
+vgmdb/user
+==========
 
-VGMdb user component, heavily based on FOSUserBundle.
+The VGMdb user component, heavily based on FOSUserBundle.

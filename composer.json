@@ -1,0 +1,17 @@
+{
+    "name": "vgmdb/user",
+    "description": "VGMdb user component",
+    "keywords": [],
+    "homepage": "http://vgmdb.net",
+    "authors": [
+        {
+            "name": "Gigablah",
+            "email": "gigablah@vgmdb.net"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "VGMdb\\Component\\User": "src/"
+        }
+    }
+}
