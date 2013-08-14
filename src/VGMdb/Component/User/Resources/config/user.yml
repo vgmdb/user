@@ -1,0 +1,16 @@
+services:
+    user:
+        path: /user
+        firewall_name: master
+        model.user_class: VGMdb\Model\Entity\User
+        model.auth_class: VGMdb\Model\Entity\AuthProvider
+        security.bcrypt.work_factor: %user.security.bcrypt.work_factor%
+        security.reset_ttl: %user.security.reset_ttl%
+        registration.require_confirmation: true
+        mailer.config:
+            user.mailer.confirmation.template: email/confirm
+            user.mailer.confirmation.from_email: webmaster@%app.hosts.web.host%
+            user.mailer.resetpassword.template: email/reset
+            user.mailer.resetpassword.from_email: webmaster@%app.hosts.web.host%
+            user.mailer.newpassword.template: email/newpassword
+            user.mailer.newpassword.from_email: webmaster@%app.hosts.web.host%

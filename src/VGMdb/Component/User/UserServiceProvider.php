@@ -39,6 +39,8 @@ use Symfony\Component\Security\Http\SecurityEvents;
  */
 class UserServiceProvider extends AbstractResourceProvider implements ServiceProviderInterface
 {
+    protected $config = 'user.yml';
+
     public function register(Application $app)
     {
         $app['user_manager'] = $app->share(function ($app) {
@@ -152,69 +154,6 @@ class UserServiceProvider extends AbstractResourceProvider implements ServicePro
                 $app['mustache'],
                 $app['logger'],
                 $app['user.mailer.config']
-            );
-        });
-
-        $app['data.user'] = $app->protect(function ($username) use ($app) {
-            if ($username === 'me') {
-                $token = $app['security']->getToken();
-                if (!$token instanceof TokenInterface) {
-                    throw new TokenNotFoundException('Token not found.');
-                }
-                if ($app['security.trust_resolver']->isAnonymous($token)) {
-                    throw new InsufficientAuthenticationException('Not logged in.');
-                }
-                $user = $token->getUser();
-                if (!$user instanceof UserInterface) {
-                    throw new UnsupportedUserException(sprintf('Expected an instance of %s, got %s instead.', $app['user.model.user_class'], get_class($user)));
-                }
-                $username = $user->getUsername();
-                $roles = $token->getRoles();
-                $auth = $user->getAuthProviders();
-                $token = $app['form.csrf_provider']->generateCsrfToken('logout');
-            } else {
-                $user = $app['user_manager']->findUserByUsername($username);
-                if (!$user) {
-                    throw new UsernameNotFoundException(sprintf('User "%s" not found.', $username));
-                }
-                $username = $user->getUsername();
-                $roles = $user->getRoles();
-                $auth = $user->getAuthProviders();
-                $token = null;
-            }
-            $email = $user->getEmailCanonical();
-            $email_hash = md5($email);
-
-            return array(
-                'username' => $username,
-                'email' => $email,
-                'email_hash' => $email_hash,
-                'roles' => $roles,
-                'tokens' => array(
-                    'logout' => $token
-                ),
-                'urls' => array(
-                    'logout' => $app['security.firewalls'][$app['user.firewall_name']]['logout']['logout_path']
-                ),
-                'is_authenticated' => true
-            );
-        });
-
-        $app['data.login'] = $app->share(function ($app) {
-            return array(
-                'error' => $app['security.last_error']($app['request']),
-                'last_username' => $app['session']->get('_security.last_username'),
-                'tokens' => array(
-                    'login' => $app['form.csrf_provider']->generateCsrfToken('authenticate'),
-                    'oauth' => $app['form.csrf_provider']->generateCsrfToken('oauth')
-                ),
-                'urls' => array(
-                    'login_check' => $app['security.firewalls'][$app['user.firewall_name']]['form']['check_path'],
-                    'login_reset' => $app['security.firewalls'][$app['user.firewall_name']]['form']['reset_path'],
-                    'login_facebook' => $app['security.firewalls'][$app['user.firewall_name']]['oauth.facebook']['login_path'],
-                    'login_twitter' => $app['security.firewalls'][$app['user.firewall_name']]['oauth.twitter']['login_path'],
-                    'login_google' => $app['security.firewalls'][$app['user.firewall_name']]['oauth.google']['login_path']
-                )
             );
         });
     }
