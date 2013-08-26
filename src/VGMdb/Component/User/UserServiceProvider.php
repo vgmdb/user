@@ -8,10 +8,10 @@ use VGMdb\Component\User\Form\Flow\RegistrationFormFlow;
 use VGMdb\Component\User\Form\Type\ResetPasswordFormType;
 use VGMdb\Component\User\Form\Handler\RegistrationFormHandler;
 use VGMdb\Component\User\Form\Handler\ResetPasswordFormHandler;
-use VGMdb\Component\User\Model\UserInterface;
 use VGMdb\Component\User\Model\Doctrine\UserManager;
 use VGMdb\Component\User\Provider\UserProvider;
 use VGMdb\Component\User\Security\LoginManager;
+use VGMdb\Component\User\Security\LoginListenerRegistry;
 use VGMdb\Component\User\Security\InteractiveLoginListener;
 use VGMdb\Component\User\Security\Core\Authentication\Provider\DaoAuthenticationProvider;
 use VGMdb\Component\User\Util\Canonicalizer;
@@ -21,16 +21,9 @@ use VGMdb\Component\User\Util\UserManipulator;
 use VGMdb\Component\User\Mailer\MustacheSwiftMailer;
 use Silex\Application;
 use Silex\ServiceProviderInterface;
-use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Encoder\EncoderFactory;
 use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
 use Symfony\Component\Security\Core\Encoder\Pbkdf2PasswordEncoder;
-use Symfony\Component\Security\Core\Exception\TokenNotFoundException;
-use Symfony\Component\Security\Core\Exception\InsufficientAuthenticationException;
-use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
-use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
-use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
-use Symfony\Component\Security\Http\SecurityEvents;
 
 /**
  * Provides user management. Adapted from FriendsOfSymfony UserBundle.
@@ -90,7 +83,11 @@ class UserServiceProvider extends AbstractResourceProvider implements ServicePro
         });
 
         $app['user.security.interactive_login_listener'] = $app->share(function ($app) {
-            return new InteractiveLoginListener($app['user_manager']);
+            return new InteractiveLoginListener($app['user.security.login_listener_registry']);
+        });
+
+        $app['user.security.login_listener_registry'] = $app->share(function ($app) {
+            return new LoginListenerRegistry();
         });
 
         $app['user.security.login_manager'] = $app->share(function ($app) {
@@ -160,10 +157,6 @@ class UserServiceProvider extends AbstractResourceProvider implements ServicePro
 
     public function boot(Application $app)
     {
-        $app['dispatcher']->addListener(
-            SecurityEvents::INTERACTIVE_LOGIN,
-            array($app['user.security.interactive_login_listener'], 'onSecurityInteractiveLogin'),
-            8
-        );
+        $app['dispatcher']->addSubscriber($app['user.security.interactive_login_listener']);
     }
 }

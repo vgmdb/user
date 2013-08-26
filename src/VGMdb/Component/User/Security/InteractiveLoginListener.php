@@ -2,33 +2,39 @@
 
 namespace VGMdb\Component\User\Security;
 
-use VGMdb\Component\User\Model\UserManagerInterface;
-use VGMdb\Component\User\Model\UserInterface;
+use Symfony\Component\Security\Http\SecurityEvents;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
- * Updates user last login time upon authentication.
+ * Invokes registered handlers upon user authentication.
  *
- * @author Thibault Duplessis <thibault.duplessis@gmail.com>
- * @author Christophe Coevoet <stof@notk.org>
- * @copyright (c) 2010-2012 FriendsOfSymfony
+ * @author Gigablah <gigablah@vgmdb.net>
  */
-class InteractiveLoginListener
+class InteractiveLoginListener implements EventSubscriberInterface
 {
-    protected $userManager;
+    protected $registry;
 
-    public function __construct(UserManagerInterface $userManager)
+    public function __construct(LoginListenerRegistry $registry)
     {
-        $this->userManager = $userManager;
+        $this->registry = $registry;
     }
 
     public function onSecurityInteractiveLogin(InteractiveLoginEvent $event)
     {
-        $user = $event->getAuthenticationToken()->getUser();
+        $listeners = $this->registry->getListeners($event->getRequest());
 
-        if ($user instanceof UserInterface) {
-            //$user->setLastLogin(new \DateTime());
-            //$this->userManager->updateUser($user);
+        foreach ($listeners as $listener) {
+            if ($event->isPropagationStopped()) {
+                break;
+            }
+
+            $listener->handle($event);
         }
+    }
+
+    public static function getSubscribedEvents()
+    {
+        return array(SecurityEvents::INTERACTIVE_LOGIN => array('onSecurityInteractiveLogin', 8));
     }
 }
